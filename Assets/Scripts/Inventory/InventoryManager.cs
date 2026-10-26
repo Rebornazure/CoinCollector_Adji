@@ -9,6 +9,8 @@ public class InventoryManager : MonoBehaviour, GrabableItem
     [SerializeField] private int slotCount = 16;
     private bool InventoryActive;
     public ItemSlot[] itemSlot;
+    // cek itemDetaildpanel
+    [SerializeField] private ItemDetailPanel detailpanel;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -17,6 +19,11 @@ public class InventoryManager : MonoBehaviour, GrabableItem
         InventoryCanvas.SetActive(false);
         inventoryAction = InputSystem.actions.FindAction("Inventory");
         InventoryActive = false;
+
+        if (detailpanel == null)
+        {
+            Debug.LogWarning("No detailspanel assigned", this);
+        }
 
     }
 
@@ -29,6 +36,8 @@ public class InventoryManager : MonoBehaviour, GrabableItem
             Time.timeScale = 0f;
             Debug.Log("Inventory is active");
             InventoryCanvas.SetActive(true);
+            // show first item
+            ShowFirstItem();
         } else if (inventoryAction.triggered && InventoryCanvas != null && InventoryActive == true)
         {
             InventoryActive = false;
@@ -74,15 +83,77 @@ public class InventoryManager : MonoBehaviour, GrabableItem
             return;
         }
 
+        // for (int i = 0; i < itemSlot.Length; i++)
+        // {
+        //     if (!itemSlot[i].isFull)
+        //     {
+        //         itemSlot[i].AddItem(item);
+        //         return;
+        //     }
+        // }
+
         for (int i = 0; i < itemSlot.Length; i++)
         {
-            if (!itemSlot[i].isFull)
+            if (itemSlot[i].CanStackWith(item.ItemName))
+            {
+                itemSlot[i].AddQuantity(item.Quantity);
+                return;
+            }
+        }
+
+        for (int i = 0; i < itemSlot.Length; i++)
+        {
+            if (itemSlot[i].IsEmpty)
             {
                 itemSlot[i].AddItem(item);
                 return;
             }
         }
 
+
         Debug.LogWarning("Inventory is full, '" + item.ItemName + "' was lost.");
+    }
+
+    public void SelectSlot(ItemSlot slot)
+    {
+        DesselectAllSlot();
+
+        slot.selectedPanel.SetActive(true);
+        slot.isItemSelected = true;
+
+        if (detailpanel != null)
+        {
+            detailpanel.Show(slot.ItemDetails, slot.itemQuantity);
+        }
+    }
+
+
+    private void ShowFirstItem()
+    {
+        if (itemSlot != null)
+        {
+            foreach (ItemSlot slot in itemSlot)
+            {
+                if (!slot.IsEmpty)
+                {
+                    SelectSlot(slot);
+                    return;
+                }
+            }
+        }
+
+        if (detailpanel != null)
+        {
+            detailpanel.Clear();
+        }
+    }
+
+    public void DesselectAllSlot()
+    {
+        foreach (ItemSlot slot in itemSlot)
+        {
+            slot.isItemSelected = false;
+            slot.selectedPanel.SetActive(false);
+        }
     }
 }
